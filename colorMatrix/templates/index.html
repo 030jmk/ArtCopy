@@ -1,0 +1,129 @@
+<!DOCTYPE html>  
+<html lang="en">  
+<head>  
+    <meta charset="UTF-8">  
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">  
+    <title>Color Grid</title>  
+    <style>  
+        body, html {  
+            margin: 0;  
+            padding: 0;  
+            width: 100%;  
+            height: 100%;  
+            display: flex;  
+            flex-direction: column;  
+            justify-content: center;  
+            align-items: center;  
+            background-color: #fff;  
+            position: relative;  
+            min-height: 100vh;  
+            cursor: none;
+        }  
+        table {  
+            border-collapse: collapse;  
+            margin: 20px;  
+        }  
+        td {  
+            width: 30px;  
+            height: 30px;  
+            border: none;  
+            transition: background-color 0.3s;  
+        }  
+        #timestamp, #buttonPresses {  
+            position: fixed;  
+            bottom: 20px;  
+            right: 20px;  
+            color: #666;  
+            font-family: monospace;  
+            font-size: 14px;  
+        }  
+        #buttonPresses {  
+            bottom: 60px;  
+        }  
+    </style>  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.8.1/socket.io.js"></script>  
+</head>  
+<body>  
+    <table id="colorGrid"></table>  
+    <div id="buttonPresses"></div>  
+    <div id="timestamp"></div>  
+    <script>  
+        const socket = io({  
+            transports: ['websocket'],  
+            reconnection: true,  
+            reconnectionAttempts: 5  
+        });  
+  
+        function formatDateTime(date) {  
+            const pad = (num) => String(num).padStart(2, '0');  
+              
+            const year = date.getFullYear();  
+            const month = pad(date.getMonth() + 1);  
+            const day = pad(date.getDate());  
+            const hours = pad(date.getHours());  
+            const minutes = pad(date.getMinutes());  
+            const seconds = pad(date.getSeconds());  
+  
+            return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;  
+        }  
+  
+        function updateTimestamp() {  
+            const timestamp = document.getElementById('timestamp');  
+            timestamp.textContent = `Last update: ${formatDateTime(new Date())}`;  
+        }  
+  
+        function updateButtonPresses(presses) {  
+            const buttonPresses = document.getElementById('buttonPresses');  
+            buttonPresses.textContent = `Button presses: ${presses.length}`;  
+        }  
+  
+        function updateTable(grid) {  
+            const table = document.getElementById('colorGrid');  
+            table.innerHTML = '';  
+            for (let i = 0; i < grid.length; i++) {  
+                const row = table.insertRow();  
+                for (let j = 0; j < grid[i].length; j++) {  
+                    const cell = row.insertCell();  
+                    const rgb = grid[i][j];  
+                    cell.style.backgroundColor = `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;  
+                }  
+            }  
+            updateTimestamp();  
+        }  
+  
+        socket.on('connect', () => {  
+            console.log('Connected to WebSocket server');  
+        });  
+  
+        socket.on('disconnect', () => {  
+            console.log('Disconnected from WebSocket server');  
+        });  
+  
+        socket.on('update_grid', function(data) {  
+            console.log('Grid update received');  
+            updateTable(data.grid);  
+            fetchButtonPresses();  
+        });  
+  
+        function fetchButtonPresses() {  
+            fetch('/button_presses')  
+                .then(response => response.json())  
+                .then(data => {  
+                    console.log('Button press data loaded');  
+                    updateButtonPresses(data.button_presses);  
+                })  
+                .catch(error => console.error('Error loading button press data:', error));  
+        }  
+  
+        // Initial grid load  
+        fetch('/grid')  
+            .then(response => response.json())  
+            .then(data => {  
+                console.log('Initial grid loaded');  
+                updateTable(data.grid);  
+                fetchButtonPresses();  
+            })  
+            .catch(error => console.error('Error loading initial grid:', error));  
+    </script>  
+</body>  
+</html>  
