@@ -51,8 +51,7 @@ def launch_chromium():
         '--disable-infobars',
         '--disable-session-crashed-bubble',
         '--disable-features=InfiniteSessionRestore',
-        '--force-device-scale-factor=1',
-        '--ignore-certificate-errors'
+        '--force-device-scale-factor=1'
     ])
 
 def write_to_json_periodically():
